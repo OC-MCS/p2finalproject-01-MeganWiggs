@@ -5,12 +5,19 @@
 // project (moving the little green ship). 
 //========================================================
 #include <iostream>
+#include "missile.h"
+#include "enemy.h"
+#include "bomb.h"
+#include "ship.h"
+#include "player.h"
 using namespace std;
 #include <SFML/Graphics.hpp>
 using namespace sf; 
 
 //============================================================
-// YOUR HEADER WITH YOUR NAME GOES HERE. PLEASE DO NOT FORGET THIS
+//Megan Wiggs
+// Final Program
+// thanks for good classes!!
 //============================================================
 
 // note: a Sprite represents an image on screen. A sprite knows and remembers its own position
@@ -18,6 +25,7 @@ using namespace sf;
 // the current position of the ship. 
 // x is horizontal, y is vertical. 
 // 0,0 is in the UPPER LEFT of the screen, y increases DOWN the screen
+
 void moveShip(Sprite& ship)
 {
 	const float DISTANCE = 5.0;
@@ -48,19 +56,14 @@ int main()
 
 	// load textures from file into memory. This doesn't display anything yet.
 	// Notice we do this *before* going into animation loop.
-	Texture shipTexture;
-	if (!shipTexture.loadFromFile("ship.png"))
-	{
-		cout << "Unable to load ship texture!" << endl;
-		exit(EXIT_FAILURE);
-	}
+
 	Texture starsTexture;
 	if (!starsTexture.loadFromFile("stars.jpg"))
 	{
 		cout << "Unable to load stars texture!" << endl;
-		exit(EXIT_FAILURE);
+		//exit(EXIT_FAILURE);
 	}
-
+	
 	// A sprite is a thing we can draw and manipulate on the screen.
 	// We have to give it a "texture" to specify what it looks like
 
@@ -69,15 +72,32 @@ int main()
 	// The texture file is 640x480, so scale it up a little to cover 800x600 window
 	background.setScale(1.5, 1.5);
 
-	// create sprite and texture it
-	Sprite ship;
-	ship.setTexture(shipTexture);
+	// make instances of the ship, missiles, aliens, UI and font
+	ship theShip;
+	missile missiles;
+	enemy enemies;
+	player p;
+	Font font;
+	Text hitCount, lifeCount, startGame;
+	int i = 0;
+	int hits = 0;
+	
+	// code for the labels
+	font.loadFromFile("C:\\Windows\\Fonts\\Comicbd.ttf");
+	
+	hitCount.setFont(font);
+	hitCount.setString("Hits: ");
+	hitCount.setPosition(Vector2f(100, 400));
 
+	lifeCount.setFont(font);
+	lifeCount.setString("Lives: ");
+	lifeCount.setPosition(Vector2f(100, 450));
 
-	// initial position of the ship will be approx middle of screen
-	float shipX = window.getSize().x / 2.0f;
-	float shipY = window.getSize().y / 2.0f;
-	ship.setPosition(shipX, shipY);
+	startGame.setFont(font);
+	startGame.setString("Press x to start");
+	startGame.setPosition(Vector2f(200, 200));
+	bool start = false;
+	
 
 
 	while (window.isOpen())
@@ -95,9 +115,16 @@ int main()
 			{
 				if (event.key.code == Keyboard::Space)
 				{
+					Sprite ship = theShip.getShip();
+					missiles.fire(ship.getPosition().x, ship.getPosition().y);
 					// handle space bar
 				}
-				
+				if (event.key.code == Keyboard::X)
+				{
+					start = true;
+					// handle x
+				}
+
 			}
 		}
 
@@ -109,15 +136,46 @@ int main()
 
 		// draw background first, so everything that's drawn later 
 		// will appear on top of background
+
+	
+		
 		window.draw(background);
 
-		moveShip(ship);
+		if (!start) {
+			window.draw(startGame);
+		}
+
+	
 
 		// draw the ship on top of background 
 		// (the ship from previous frame was erased when we drew background)
-		window.draw(ship);
 
+	
+		else {
+			window.draw(hitCount);
+			window.draw(lifeCount);
+			missiles.draw(window);
+			enemies.draw(window);
+			theShip.draw(window);
+			theShip.move();
+			if (enemies.checkDeath(missiles)) {
+				hits++;
+				hitCount.setString("Hits: " + to_string(hits));
+			}
+			if (p.checkPlayerDeath(enemies.theBombs, theShip) && p.getLives() == 0) {
+				enemies.reset();
+				p.resetLives();
+			}
+			lifeCount.setString("Lives: " + to_string(p.getLives()));
 
+			i++;
+
+			if (i == 60) {
+				enemies.bombFire();
+				i = 0;
+			}
+
+		}
 		// end the current frame; this makes everything that we have 
 		// already "drawn" actually show up on the screen
 		window.display();
